@@ -1,0 +1,33 @@
+# Compiled Elixir
+/_build/
+/cover/
+/deps/
+/doc/
+
+# OTP
+erl_crash.dump
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.idea/
+.vscode/
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.excoveralls.json
+coverage.json
+
+# Other
+.elixir_ls/
+*.beam
