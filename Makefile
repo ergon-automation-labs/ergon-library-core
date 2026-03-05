@@ -1,11 +1,12 @@
-.PHONY: setup help deps test credo dialyzer coverage check format clean
+.PHONY: setup help deps test credo dialyzer coverage check format clean setup-hooks
 
 ## Show this help message
 help:
 	@echo "BotArmyCore - Elixir Library"
 	@echo ""
 	@echo "Available commands:"
-	@echo "  make setup        - Set up project (deps.get)"
+	@echo "  make setup        - Set up project (deps.get + install git hooks)"
+	@echo "  make setup-hooks  - Install git hooks for pre-push validation"
 	@echo "  make test         - Run all tests"
 	@echo "  make credo        - Run linter (code style)"
 	@echo "  make dialyzer     - Run static analysis"
@@ -16,8 +17,13 @@ help:
 	@echo ""
 
 ## Initial setup
-setup: init deps
+setup: init deps setup-hooks
 	@echo "Setup complete. Run 'make check' to verify everything works."
+
+## Install git hooks
+setup-hooks:
+	@git config core.hooksPath git-hooks
+	@echo "✓ Git hooks installed (core.hooksPath = git-hooks)"
 
 ## Initialize git repository (idempotent)
 init:
