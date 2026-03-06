@@ -141,3 +141,46 @@ This library is deployed via Salt by `bot_army_infra`. See that repo for:
 - Individual bots (depend on `bot_army_core` and `bot_army_schemas`)
 
 See `bot_army_repo_structure_1.md` in `bot_army_schemas` for the full polyrepo context.
+
+---
+
+## Agent Workflow Pattern
+
+**Effective use of Claude Code agents when developing this library.**
+
+This follows the polyrepo agent strategy documented in `bot_army_infra/CLAUDE.md`.
+
+### When to Use Haiku Agents
+
+- Exploring the decoder implementation and schema loading logic
+- Reading test files to understand expected behavior
+- Diagnostics: checking test failures, understanding error logs
+- Code search: finding specific message envelope handling code
+- Verification: running tests, checking backward compatibility
+
+**Why**: Fast iteration loop, perfect for understanding existing code and validation.
+
+### When to Use Sonnet Agents
+
+- Implementing new decoder features or message types
+- Designing changes to schema handling
+- Backward compatibility validation
+- Refactoring the NATS decoder for new requirements
+- Complex changes affecting all downstream bots
+
+**Why**: This is a foundation library — changes ripple to every bot. Deep reasoning ensures correctness.
+
+### Example: Extend Message Envelope
+
+```
+User: "Add request_id field to message envelope"
+  ↓
+1. Haiku (Explore): Read envelope schema, current decoder implementation
+  ↓
+2. Sonnet (Plan): Design decoder changes, migration path for older messages
+   Identify all places envelope is used, test strategy
+  ↓
+3. Sonnet (Implement): Update decoder, add migration logic, add tests
+  ↓
+4. Haiku (Verify): Run test suite, check backward compatibility
+```
