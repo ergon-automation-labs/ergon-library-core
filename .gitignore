@@ -31,3 +31,8 @@ coverage.json
 # Other
 .elixir_ls/
 *.beam
+
+# Build artifacts and crash dumps
+*.crash
+*.tar.gz
+*.tar.xz
