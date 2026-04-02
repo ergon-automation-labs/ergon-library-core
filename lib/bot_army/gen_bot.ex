@@ -107,7 +107,7 @@ defmodule BotArmy.GenBot do
       @impl true
       def init(opts) do
         Logger.info("[#{@bot_id}] Starting GenBot",
-          skills: Enum.map(@skills, &elem(&1, 1)),
+          skills: Enum.map(@skills, &(&1.name())),
           bot_id: @bot_id
         )
 
@@ -139,9 +139,9 @@ defmodule BotArmy.GenBot do
 
       defp subscribe_to_subjects(state) do
         try do
-          # Subscribe to all skill triggers
-          for {_trigger, skill} <- state.skill_index do
-            BotArmyCore.NATS.subscribe(skill.nats_triggers())
+          # Subscribe to all skill triggers (skill_index is already {trigger -> skill} map)
+          for {trigger, _skill} <- state.skill_index do
+            BotArmyCore.NATS.subscribe(trigger)
           end
 
           # Subscribe to context updates
