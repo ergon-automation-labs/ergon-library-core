@@ -1,4 +1,6 @@
-.PHONY: setup help deps test credo dialyzer coverage check format clean setup-hooks
+SCRIPTS_DIRECTORY ?= $(abspath $(CURDIR)/../scripts)
+
+.PHONY: setup help deps test credo dialyzer coverage check format clean setup-hooks logs
 
 ## Show this help message
 help:
@@ -14,6 +16,7 @@ help:
 	@echo "  make check        - Run all checks (test, credo, dialyzer)"
 	@echo "  make format       - Format Elixir code"
 	@echo "  make clean        - Clean build artifacts"
+	@echo "  make logs         - Tail bot_army_core log with grc (brew install grc; make -C .. install-grc)"
 	@echo ""
 
 ## Initial setup
@@ -66,3 +69,6 @@ format:
 clean:
 	mix clean
 	rm -rf _build cover doc
+
+logs:
+	@$(SCRIPTS_DIRECTORY)/tail_bot_log.sh
