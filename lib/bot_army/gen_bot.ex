@@ -332,7 +332,8 @@ defmodule BotArmy.GenBot do
           bot_id: state.bot_id,
           personality: state.personality,
           context: state.context,
-          llm: BotArmy.LLMProxy
+          llm: BotArmy.LLMProxy,
+          embeddings: BotArmy.EmbeddingsProxy
         }
       end
     end
