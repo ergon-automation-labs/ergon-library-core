@@ -5,6 +5,8 @@ defmodule BotArmyCore.Application do
 
   use Application
 
+  @env Mix.env()
+
   @impl true
   def start(_type, _args) do
     children = maybe_add_graph_repo()
@@ -15,7 +17,7 @@ defmodule BotArmyCore.Application do
 
   defp maybe_add_graph_repo do
     if Application.get_env(:bot_army_core, :graph_enabled, false) &&
-         Mix.env() != :test do
+         @env != :test do
       [BotArmyCore.GraphRepo]
     else
       []
