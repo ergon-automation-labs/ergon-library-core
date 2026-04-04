@@ -74,7 +74,8 @@ defmodule BotArmyCore.NATS.Decoder do
   end
 
   defp validate_field_types(envelope) do
-    validations = [
+    # Required fields - must have correct type
+    required_validations = [
       {"event_id", "string"},
       {"event", "string"},
       {"schema_version", "string"},
@@ -84,7 +85,15 @@ defmodule BotArmyCore.NATS.Decoder do
       {"payload", "object"}
     ]
 
-    Enum.reduce_while(validations, :ok, fn {field, expected_type}, _acc ->
+    # Optional fields - if present, must have correct type
+    optional_validations = [
+      {"tenant_id", "string"},
+      {"user_id", "string"},
+      {"role", "string"}
+    ]
+
+    # Validate required fields
+    case Enum.reduce_while(required_validations, :ok, fn {field, expected_type}, _acc ->
       value = envelope[field]
 
       if valid_type?(value, expected_type) do
@@ -92,7 +101,28 @@ defmodule BotArmyCore.NATS.Decoder do
       else
         {:halt, {:error, {:invalid_field_type, field, expected_type}}}
       end
-    end)
+    end) do
+      :ok ->
+        # Validate optional fields if present
+        Enum.reduce_while(optional_validations, :ok, fn {field, expected_type}, _acc ->
+          case envelope[field] do
+            nil ->
+              # Field not present - that's fine, it's optional
+              {:cont, :ok}
+
+            value ->
+              # Field present - validate type
+              if valid_type?(value, expected_type) do
+                {:cont, :ok}
+              else
+                {:halt, {:error, {:invalid_field_type, field, expected_type}}}
+              end
+          end
+        end)
+
+      error ->
+        error
+    end
   end
 
   defp valid_type?(value, "object") when is_map(value), do: true
