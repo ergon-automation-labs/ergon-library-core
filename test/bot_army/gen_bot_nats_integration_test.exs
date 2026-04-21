@@ -1,5 +1,7 @@
 defmodule BotArmy.GenBotNATSIntegrationTest do
   use ExUnit.Case
+  @moduletag :integration
+  @tag :integration
 
   @moduledoc """
   Real NATS integration tests for GenBot skill harness.
@@ -16,7 +18,7 @@ defmodule BotArmy.GenBotNATSIntegrationTest do
 
   # Helper to check if NATS is available
   defp nats_available? do
-    case :gen_tcp.connect('localhost', 4223, [:binary, active: false], 100) do
+    case :gen_tcp.connect(~c"localhost", 4223, [:binary, active: false], 100) do
       {:ok, socket} ->
         :gen_tcp.close(socket)
         true
@@ -176,12 +178,13 @@ defmodule BotArmy.GenBotNATSIntegrationTest do
         def llm_hint, do: :none
 
         def execute(_input, ctx) do
-          {:ok, %{
-            bot_id: ctx.bot_id,
-            bot_id_is_atom: is_atom(ctx.bot_id),
-            has_personality: is_map(ctx.personality),
-            has_llm: is_atom(ctx.llm)
-          }}
+          {:ok,
+           %{
+             bot_id: ctx.bot_id,
+             bot_id_is_atom: is_atom(ctx.bot_id),
+             has_personality: is_map(ctx.personality),
+             has_llm: is_atom(ctx.llm)
+           }}
         end
       end
 

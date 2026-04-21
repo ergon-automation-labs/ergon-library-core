@@ -1,6 +1,6 @@
 SCRIPTS_DIRECTORY ?= $(abspath $(CURDIR)/../scripts)
 
-.PHONY: setup help deps test credo dialyzer coverage check format clean setup-hooks logs
+.PHONY: test-handlers test-stores test-nats test-integration test-full setup help deps test credo dialyzer coverage check format clean setup-hooks logs
 
 ## Show this help message
 help:
@@ -44,6 +44,21 @@ deps:
 ## Run all tests
 test:
 	mix test
+
+test-handlers:
+	MIX_ENV=test mix test --only handlers --trace
+
+test-stores:
+	MIX_ENV=test mix test --only stores --trace
+
+test-nats:
+	MIX_ENV=test mix test --only nats --trace
+
+test-integration:
+	mix test --include integration --trace
+
+test-full:
+	mix test --include integration --include nats_live --trace
 
 ## Run linter
 credo:

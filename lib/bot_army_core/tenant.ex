@@ -2,8 +2,26 @@ defmodule BotArmyCore.Tenant do
   @moduledoc """
   Tenant identity for the multi-tenant Bot Army system.
 
-  Provides the default tenant UUID used during Phase 1 (single-tenant mode).
-  In Phase 2+, this constant is used as the fallback for backward compatibility.
+  This module provides the core tenant utilities for the Bot Army ecosystem.
+
+  ## Default Tenant
+
+  The default tenant is a UUID for single-tenant deployments (Abby's personal system).
+  SaaS tenants will have unique UUIDs assigned at provisioning time.
+
+  ## Subject Prefixing
+
+  Tenant-specific NATS subjects follow the pattern:
+      tenant.<tenant_id>.events.*
+      tenant.<tenant_id>.gtd.*
+      etc.
+
+  For more advanced tenant utilities, see `BotArmyRuntime.Tenant`.
+
+  ## Deprecation Notes
+
+  The `default_tenant_id/0` function returns a UUID. This is the standard tenant
+  identifier for single-tenant deployments. SaaS tenants get their own UUIDs.
   """
 
   @default_tenant_id "00000000-0000-0000-0000-000000000001"
@@ -11,9 +29,9 @@ defmodule BotArmyCore.Tenant do
   @doc """
   Returns the default tenant UUID.
 
-  During Phase 1, all operations use this default UUID to initialize the multi-tenant
-  data layer without behavior change. In Phase 2+, this is the fallback for legacy
-  messages and provides backward compatibility.
+  For single-tenant deployments (Abby's personal system), this returns a UUID
+  that represents the default tenant. SaaS tenants will have unique UUIDs
+  assigned at provisioning time.
 
   Returns: `"00000000-0000-0000-0000-000000000001"`
   """

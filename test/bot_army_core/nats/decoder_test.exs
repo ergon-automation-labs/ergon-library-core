@@ -1,5 +1,6 @@
 defmodule BotArmyCore.NATS.DecoderTest do
   use ExUnit.Case
+  @moduletag :nats
 
   alias BotArmyCore.NATS.Decoder
 
@@ -25,7 +26,9 @@ defmodule BotArmyCore.NATS.DecoderTest do
         "schema_version" => "1.0"
       }
 
-      {:error, {:missing_required_fields, missing}} = Decoder.decode(Jason.encode!(incomplete_message))
+      {:error, {:missing_required_fields, missing}} =
+        Decoder.decode(Jason.encode!(incomplete_message))
+
       assert "event_id" in missing
       assert "timestamp" in missing
     end
@@ -34,7 +37,8 @@ defmodule BotArmyCore.NATS.DecoderTest do
       invalid_message = %{
         "event_id" => "uuid",
         "event" => "test.event",
-        "schema_version" => 1.0,  # Should be string
+        # Should be string
+        "schema_version" => 1.0,
         "timestamp" => "2026-03-01T12:00:00Z",
         "source" => "test",
         "source_node" => "air",
@@ -42,7 +46,8 @@ defmodule BotArmyCore.NATS.DecoderTest do
         "payload" => %{}
       }
 
-      {:error, {:invalid_field_type, "schema_version", "string"}} = Decoder.decode(Jason.encode!(invalid_message))
+      {:error, {:invalid_field_type, "schema_version", "string"}} =
+        Decoder.decode(Jason.encode!(invalid_message))
     end
 
     test "accepts valid complete envelope" do

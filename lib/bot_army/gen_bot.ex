@@ -26,6 +26,9 @@ defmodule BotArmy.GenBot do
   - `jobs` — List of job modules (must implement BotArmy.Job) - optional, defaults to []
   - `personality` — Personality module with config/0 - optional, defaults to BotArmy.DefaultPersonality
   - `bot_id` — Atom identifier for the bot
+  - `db_skills` — Enable DB-driven markdown skills (requires bot_army_skills dependency) - optional, defaults to false
+  - `tenant_id` — Tenant ID for DB-driven skills - optional, defaults to nil (uses default tenant)
+  - `repo` — Ecto Repo module for DB-driven skills - optional, defaults to BotArmyRuntime.Ecto.Repo
 
   ## Context Provided to Skills
 
@@ -64,6 +67,9 @@ defmodule BotArmy.GenBot do
     jobs = Keyword.get(opts, :jobs, [])
     personality = Keyword.get(opts, :personality, BotArmy.DefaultPersonality)
     bot_id = Keyword.fetch!(opts, :bot_id)
+    db_skills = Keyword.get(opts, :db_skills, false)
+    tenant_id = Keyword.get(opts, :tenant_id, nil)
+    repo = Keyword.get(opts, :repo, BotArmyRuntime.Ecto.Repo)
 
     quote do
       use GenServer
@@ -72,6 +78,9 @@ defmodule BotArmy.GenBot do
       @jobs unquote(jobs)
       @personality unquote(personality)
       @bot_id unquote(bot_id)
+      @db_skills unquote(db_skills)
+      @db_tenant_id unquote(tenant_id)
+      @db_repo unquote(repo)
 
       require Logger
 
@@ -107,16 +116,21 @@ defmodule BotArmy.GenBot do
       @impl true
       def init(opts) do
         Logger.info("[#{@bot_id}] Starting GenBot",
-          skills: Enum.map(@skills, &(&1.name())),
+          skills: Enum.map(@skills, & &1.name()),
           bot_id: @bot_id
         )
+
+        started_at = DateTime.utc_now()
 
         state = %{
           bot_id: @bot_id,
           personality: @personality.config(),
           context: %{},
           skill_index: build_skill_index(@skills),
-          name_index: build_name_index(@skills)
+          name_index: build_name_index(@skills),
+          started_at: started_at,
+          tenant_id: @db_tenant_id,
+          repo: @db_repo
         }
 
         # Try to subscribe to all subjects, with retry on failure
@@ -202,9 +216,15 @@ defmodule BotArmy.GenBot do
 
       @impl true
       def handle_info(:heartbeat, state) do
+        # Current heartbeat - expanded with full state
         BotArmyCore.NATS.publish("bot.army.health.#{@bot_id}", %{
-          "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601(),
-          "status" => "ok"
+          bot_id: @bot_id,
+          status: :healthy,
+          skills: length(@skills),
+          uptime_sec:
+            DateTime.diff(DateTime.utc_now(), Map.get(state, :started_at, DateTime.utc_now())),
+          context: state.context,
+          personality: state.personality
         })
 
         Process.send_after(self(), :heartbeat, 30_000)
@@ -251,6 +271,11 @@ defmodule BotArmy.GenBot do
               end
             end)
           end)
+
+          # Dispatch to DB-driven skills if enabled
+          if @db_skills do
+            dispatch_db_skills(subject, payload, state)
+          end
 
           {:noreply, state}
         rescue
@@ -333,8 +358,40 @@ defmodule BotArmy.GenBot do
           personality: state.personality,
           context: state.context,
           llm: BotArmy.LLMProxy,
-          embeddings: BotArmy.EmbeddingsProxy
+          embeddings: BotArmy.EmbeddingsProxy,
+          tenant_id: state.tenant_id,
+          repo: state.repo
         }
+      end
+
+      if @db_skills do
+        defp dispatch_db_skills(subject, payload, state) do
+          tenant_id = state.tenant_id || BotArmyRuntime.Tenant.default_tenant_id()
+          repo = state.repo
+
+          try do
+            db_skills = BotArmySkills.SkillCache.list_skills(tenant_id, repo: repo)
+
+            matching =
+              Enum.filter(db_skills, fn skill ->
+                Enum.any?(skill.triggers || [], fn trigger ->
+                  BotArmyCore.NATS.subject_matches?(trigger, subject)
+                end)
+              end)
+
+            Enum.each(matching, fn skill ->
+              Task.start(fn ->
+                ctx = build_ctx(state)
+                BotArmySkills.SkillRunner.execute(skill, payload, ctx, repo: repo)
+              end)
+            end)
+          rescue
+            e ->
+              Logger.warning("[#{@bot_id}] DB skill dispatch failed",
+                error: inspect(e)
+              )
+          end
+        end
       end
     end
   end

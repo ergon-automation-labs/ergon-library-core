@@ -1,5 +1,7 @@
 defmodule BotArmy.GenBotIntegrationTest do
   use ExUnit.Case
+  @moduletag :integration
+  @tag :integration
   doctest BotArmy.GenBot
 
   describe "BotArmy.Skill behaviour" do
@@ -107,12 +109,13 @@ defmodule BotArmy.GenBotIntegrationTest do
         def llm_hint, do: :none
 
         def execute(_input, ctx) do
-          {:ok, %{
-            bot_id_present: not is_nil(ctx.bot_id),
-            personality_present: is_map(ctx.personality),
-            context_present: is_map(ctx.context),
-            llm_present: is_atom(ctx.llm)
-          }}
+          {:ok,
+           %{
+             bot_id_present: not is_nil(ctx.bot_id),
+             personality_present: is_map(ctx.personality),
+             context_present: is_map(ctx.context),
+             llm_present: is_atom(ctx.llm)
+           }}
         end
       end
 
@@ -155,7 +158,9 @@ defmodule BotArmy.GenBotIntegrationTest do
       assert BotArmyCore.NATS.subject_matches?("events.*.>", "events.gtd") == true
       assert BotArmyCore.NATS.subject_matches?("events.*.>", "events.gtd.task") == true
       assert BotArmyCore.NATS.subject_matches?("events.*.>", "events") == false
-      assert BotArmyCore.NATS.subject_matches?("events.*.>", "events.gtd.task.created.extra") == true
+
+      assert BotArmyCore.NATS.subject_matches?("events.*.>", "events.gtd.task.created.extra") ==
+               true
     end
 
     test "subject_matches? with exact match (no wildcards)" do
@@ -168,17 +173,32 @@ defmodule BotArmy.GenBotIntegrationTest do
     test "subject_matches? with skill trigger patterns" do
       # Real skill trigger patterns
       pattern1 = "bot.job_applications.command.>"
-      assert BotArmyCore.NATS.subject_matches?(pattern1, "bot.job_applications.command.create") == true
-      assert BotArmyCore.NATS.subject_matches?(pattern1, "bot.job_applications.command.delete.reason") == true
-      assert BotArmyCore.NATS.subject_matches?(pattern1, "bot.job_applications.event.created") == false
+
+      assert BotArmyCore.NATS.subject_matches?(pattern1, "bot.job_applications.command.create") ==
+               true
+
+      assert BotArmyCore.NATS.subject_matches?(
+               pattern1,
+               "bot.job_applications.command.delete.reason"
+             ) == true
+
+      assert BotArmyCore.NATS.subject_matches?(pattern1, "bot.job_applications.event.created") ==
+               false
 
       pattern2 = "events.llm.completion.*"
-      assert BotArmyCore.NATS.subject_matches?(pattern2, "events.llm.completion.job_applications") == true
-      assert BotArmyCore.NATS.subject_matches?(pattern2, "events.llm.completion.gtd.extra") == false
+
+      assert BotArmyCore.NATS.subject_matches?(pattern2, "events.llm.completion.job_applications") ==
+               true
+
+      assert BotArmyCore.NATS.subject_matches?(pattern2, "events.llm.completion.gtd.extra") ==
+               false
 
       pattern3 = "events.gtd.task.>"
       assert BotArmyCore.NATS.subject_matches?(pattern3, "events.gtd.task.created") == true
-      assert BotArmyCore.NATS.subject_matches?(pattern3, "events.gtd.task.state.updated.reason") == true
+
+      assert BotArmyCore.NATS.subject_matches?(pattern3, "events.gtd.task.state.updated.reason") ==
+               true
+
       assert BotArmyCore.NATS.subject_matches?(pattern3, "events.gtd.project.created") == false
     end
 
