@@ -273,9 +273,37 @@ defmodule BotArmy.GenBot do
           end)
 
           # Dispatch to DB-driven skills if enabled
-          if @db_skills do
-            dispatch_db_skills(subject, payload, state)
-          end
+          unquote(
+            if db_skills do
+              quote do
+                tenant_id = state.tenant_id || BotArmyRuntime.Tenant.default_tenant_id()
+                repo = state.repo
+
+                try do
+                  db_skills_list = BotArmySkills.SkillCache.list_skills(tenant_id, repo: repo)
+
+                  matching =
+                    Enum.filter(db_skills_list, fn skill ->
+                      Enum.any?(skill.triggers || [], fn trigger ->
+                        BotArmyCore.NATS.subject_matches?(trigger, subject)
+                      end)
+                    end)
+
+                  Enum.each(matching, fn skill ->
+                    Task.start(fn ->
+                      ctx = build_ctx(state)
+                      BotArmySkills.SkillRunner.execute(skill, payload, ctx, repo: repo)
+                    end)
+                  end)
+                rescue
+                  e ->
+                    Logger.warning("[#{@bot_id}] DB skill dispatch failed",
+                      error: inspect(e)
+                    )
+                end
+              end
+            end
+          )
 
           {:noreply, state}
         rescue
@@ -362,36 +390,6 @@ defmodule BotArmy.GenBot do
           tenant_id: state.tenant_id,
           repo: state.repo
         }
-      end
-
-      if @db_skills do
-        defp dispatch_db_skills(subject, payload, state) do
-          tenant_id = state.tenant_id || BotArmyRuntime.Tenant.default_tenant_id()
-          repo = state.repo
-
-          try do
-            db_skills = BotArmySkills.SkillCache.list_skills(tenant_id, repo: repo)
-
-            matching =
-              Enum.filter(db_skills, fn skill ->
-                Enum.any?(skill.triggers || [], fn trigger ->
-                  BotArmyCore.NATS.subject_matches?(trigger, subject)
-                end)
-              end)
-
-            Enum.each(matching, fn skill ->
-              Task.start(fn ->
-                ctx = build_ctx(state)
-                BotArmySkills.SkillRunner.execute(skill, payload, ctx, repo: repo)
-              end)
-            end)
-          rescue
-            e ->
-              Logger.warning("[#{@bot_id}] DB skill dispatch failed",
-                error: inspect(e)
-              )
-          end
-        end
       end
     end
   end

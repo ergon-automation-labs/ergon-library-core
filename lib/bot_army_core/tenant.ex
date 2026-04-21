@@ -25,6 +25,7 @@ defmodule BotArmyCore.Tenant do
   """
 
   @default_tenant_id "00000000-0000-0000-0000-000000000001"
+  @default_user_id "00000000-0000-0000-0000-000000000002"
 
   @doc """
   Returns the default tenant UUID.
@@ -36,6 +37,16 @@ defmodule BotArmyCore.Tenant do
   Returns: `"00000000-0000-0000-0000-000000000001"`
   """
   def default_tenant_id, do: @default_tenant_id
+
+  @doc """
+  Returns the default user UUID.
+
+  For messages that don't specify a user_id (e.g., system-level requests),
+  this provides a default user identity.
+
+  Returns: `"00000000-0000-0000-0000-000000000002"`
+  """
+  def default_user_id, do: @default_user_id
 
   @doc """
   Extracts tenant context from a decoded NATS message.
@@ -67,7 +78,7 @@ defmodule BotArmyCore.Tenant do
   def extract_context(message) when is_map(message) do
     %{
       tenant_id: message["tenant_id"] || @default_tenant_id,
-      user_id: message["user_id"],
+      user_id: message["user_id"] || @default_user_id,
       role: message["role"] || "user"
     }
   end
