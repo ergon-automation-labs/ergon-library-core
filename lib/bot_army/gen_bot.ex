@@ -30,6 +30,14 @@ defmodule BotArmy.GenBot do
   - `tenant_id` — Tenant ID for DB-driven skills - optional, defaults to nil (uses default tenant)
   - `repo` — Ecto Repo module for DB-driven skills - optional, defaults to BotArmyRuntime.Ecto.Repo
 
+  ## Unified Skill Dispatch
+
+  Both compiled skills and DB-driven skills share the same dispatch path:
+  - `skill_index` maps `{trigger_pattern => {:compiled, module} | {:db, skill_definition}}`
+  - `name_index` maps `{name_or_slug => {:compiled, module} | {:db, skill_definition}}`
+  - When `db_skills: true`, DB skills are loaded on init and merged into both indexes
+  - Cache invalidation triggers a reload of DB skill entries
+
   ## Context Provided to Skills
 
   ```elixir
@@ -92,7 +100,7 @@ defmodule BotArmy.GenBot do
       end
 
       @doc """
-      Synchronously run a skill by name.
+      Synchronously run a skill by name (atom) or slug (string).
       """
       def run_skill(skill_name, input) do
         GenServer.call(__MODULE__, {:run_skill, skill_name, input}, 10_000)
@@ -122,16 +130,27 @@ defmodule BotArmy.GenBot do
 
         started_at = DateTime.utc_now()
 
+        compiled_index = build_skill_index(@skills)
+        compiled_names = build_name_index(@skills)
+
         state = %{
           bot_id: @bot_id,
           personality: @personality.config(),
           context: %{},
-          skill_index: build_skill_index(@skills),
-          name_index: build_name_index(@skills),
+          skill_index: compiled_index,
+          name_index: compiled_names,
           started_at: started_at,
           tenant_id: @db_tenant_id,
           repo: @db_repo
         }
+
+        unquote(
+          if db_skills do
+            quote do
+              state = merge_db_skills(state)
+            end
+          end
+        )
 
         # Try to subscribe to all subjects, with retry on failure
         case subscribe_to_subjects(state) do
@@ -153,16 +172,20 @@ defmodule BotArmy.GenBot do
 
       defp subscribe_to_subjects(state) do
         try do
-          # Subscribe to all skill triggers (skill_index is already {trigger -> skill} map)
-          for {trigger, _skill} <- state.skill_index do
+          for {trigger, _entry} <- state.skill_index do
             BotArmyCore.NATS.subscribe(trigger)
           end
 
-          # Subscribe to context updates
           BotArmyCore.NATS.subscribe("context.current")
-
-          # Subscribe to direct commands for this bot
           BotArmyCore.NATS.subscribe("bot.army.#{@bot_id}.command.>")
+
+          unquote(
+            if db_skills do
+              quote do
+                BotArmyCore.NATS.subscribe("bot.army.skills.cache.invalidate")
+              end
+            end
+          )
 
           :ok
         rescue
@@ -174,28 +197,51 @@ defmodule BotArmy.GenBot do
 
       @impl true
       def handle_call({:run_skill, skill_name, input}, _from, state) do
-        skill = state.name_index[skill_name]
+        case Map.get(state.name_index, skill_name) do
+          nil ->
+            {:reply, {:error, {:skill_not_found, skill_name}}, state}
 
-        if skill do
-          ctx = build_ctx(state)
+          {:compiled, skill} ->
+            ctx = build_ctx(state)
 
-          case skill.validate(input) do
-            :ok ->
-              case skill.execute(input, ctx) do
-                {:ok, result} ->
-                  on_skill_success(skill, result, state)
-                  {:reply, {:ok, result}, state}
+            case skill.validate(input) do
+              :ok ->
+                case skill.execute(input, ctx) do
+                  {:ok, result} ->
+                    on_skill_success({:compiled, skill}, result, state)
+                    {:reply, {:ok, result}, state}
 
-                {:error, reason} ->
-                  on_skill_error(skill, reason, state)
-                  {:reply, {:error, reason}, state}
+                  {:error, reason} ->
+                    on_skill_error({:compiled, skill}, reason, state)
+                    {:reply, {:error, reason}, state}
+                end
+
+              {:error, reason} ->
+                {:reply, {:error, {:validation_failed, reason}}, state}
+            end
+
+          {:db, skill_def} ->
+            unquote(
+              if db_skills do
+                quote do
+                  ctx = build_ctx(state)
+
+                  case BotArmySkills.SkillRunner.execute(skill_def, input, ctx, repo: state.repo) do
+                    {:ok, result} ->
+                      on_skill_success({:db, skill_def}, result, state)
+                      {:reply, {:ok, result}, state}
+
+                    {:error, reason} ->
+                      on_skill_error({:db, skill_def}, reason, state)
+                      {:reply, {:error, reason}, state}
+                  end
+                end
+              else
+                quote do
+                  {:reply, {:error, {:db_skills_not_enabled, skill_name}}, state}
+                end
               end
-
-            {:error, reason} ->
-              {:reply, {:error, {:validation_failed, reason}}, state}
-          end
-        else
-          {:reply, {:error, {:skill_not_found, skill_name}}, state}
+            )
         end
       end
 
@@ -216,11 +262,14 @@ defmodule BotArmy.GenBot do
 
       @impl true
       def handle_info(:heartbeat, state) do
-        # Current heartbeat - expanded with full state
         BotArmyCore.NATS.publish("bot.army.health.#{@bot_id}", %{
           bot_id: @bot_id,
           status: :healthy,
           skills: length(@skills),
+          db_skills:
+            unquote(
+              if db_skills, do: quote(do: map_size(state.name_index) - length(@skills)), else: 0
+            ),
           uptime_sec:
             DateTime.diff(DateTime.utc_now(), Map.get(state, :started_at, DateTime.utc_now())),
           context: state.context,
@@ -247,63 +296,14 @@ defmodule BotArmy.GenBot do
       def handle_info({:msg, %{topic: subject, body: body}}, state) do
         try do
           payload = Jason.decode!(body)
-          matching_skills = find_matching_skills(subject, state.skill_index)
+          matching = find_matching_skills(subject, state.skill_index)
 
-          Enum.each(matching_skills, fn skill ->
+          Enum.each(matching, fn entry ->
             Task.start(fn ->
               ctx = build_ctx(state)
-
-              case skill.validate(payload) do
-                :ok ->
-                  case skill.execute(payload, ctx) do
-                    {:ok, result} ->
-                      on_skill_success(skill, result, state)
-
-                    {:error, reason} ->
-                      on_skill_error(skill, reason, state)
-                  end
-
-                {:error, reason} ->
-                  Logger.warning("[#{@bot_id}] Skill validation failed",
-                    skill: skill.name(),
-                    reason: reason
-                  )
-              end
+              dispatch_skill(entry, payload, ctx, state)
             end)
           end)
-
-          # Dispatch to DB-driven skills if enabled
-          unquote(
-            if db_skills do
-              quote do
-                tenant_id = state.tenant_id || BotArmyRuntime.Tenant.default_tenant_id()
-                repo = state.repo
-
-                try do
-                  db_skills_list = BotArmySkills.SkillCache.list_skills(tenant_id, repo: repo)
-
-                  matching =
-                    Enum.filter(db_skills_list, fn skill ->
-                      Enum.any?(skill.triggers || [], fn trigger ->
-                        BotArmyCore.NATS.subject_matches?(trigger, subject)
-                      end)
-                    end)
-
-                  Enum.each(matching, fn skill ->
-                    Task.start(fn ->
-                      ctx = build_ctx(state)
-                      BotArmySkills.SkillRunner.execute(skill, payload, ctx, repo: repo)
-                    end)
-                  end)
-                rescue
-                  e ->
-                    Logger.warning("[#{@bot_id}] DB skill dispatch failed",
-                      error: inspect(e)
-                    )
-                end
-              end
-            end
-          )
 
           {:noreply, state}
         rescue
@@ -317,17 +317,51 @@ defmodule BotArmy.GenBot do
         end
       end
 
+      unquote(
+        if db_skills do
+          quote do
+            @impl true
+            def handle_info(
+                  {:msg, %{topic: "bot.army.skills.cache.invalidate", body: body}},
+                  state
+                ) do
+              case Jason.decode(body) do
+                {:ok, %{"tenant_id" => tid}} when tid == state.tenant_id ->
+                  Logger.info("[#{@bot_id}] DB skills cache invalidated, reloading")
+                  {:noreply, merge_db_skills(state)}
+
+                {:ok, %{"tenant_id" => _other}} ->
+                  {:noreply, state}
+
+                _ ->
+                  # Unknown payload shape, reload anyway
+                  Logger.info(
+                    "[#{@bot_id}] DB skills cache invalidated (unknown tenant), reloading"
+                  )
+
+                  {:noreply, merge_db_skills(state)}
+              end
+            rescue
+              _ ->
+                {:noreply, state}
+            end
+          end
+        end
+      )
+
       def handle_info(msg, state) do
         Logger.debug("[#{@bot_id}] Ignoring unknown message", message: inspect(msg))
         {:noreply, state}
       end
 
       @doc false
-      def on_skill_success(skill, result, state) do
+      def on_skill_success(skill_entry, result, state) do
+        skill_name = skill_name_from_entry(skill_entry)
+
         BotArmyCore.NATS.publish(
           "bot.army.#{state.bot_id}.event.skill_completed",
           %{
-            "skill" => Atom.to_string(skill.name()),
+            "skill" => Atom.to_string(skill_name),
             "result" => result,
             "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
           }
@@ -337,16 +371,18 @@ defmodule BotArmy.GenBot do
       defoverridable on_skill_success: 3
 
       @doc false
-      def on_skill_error(skill, reason, state) do
+      def on_skill_error(skill_entry, reason, state) do
+        skill_name = skill_name_from_entry(skill_entry)
+
         Logger.error("[#{state.bot_id}] Skill failed",
-          skill: skill.name(),
+          skill: skill_name,
           reason: inspect(reason)
         )
 
         BotArmyCore.NATS.publish(
           "bot.army.#{state.bot_id}.event.skill_failed",
           %{
-            "skill" => Atom.to_string(skill.name()),
+            "skill" => Atom.to_string(skill_name),
             "reason" => inspect(reason),
             "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
           }
@@ -360,25 +396,116 @@ defmodule BotArmy.GenBot do
       defp build_skill_index(skills) do
         Enum.flat_map(skills, fn skill ->
           Enum.map(skill.nats_triggers(), fn trigger ->
-            {trigger, skill}
+            {trigger, {:compiled, skill}}
           end)
         end)
       end
 
       defp build_name_index(skills) do
         Enum.into(skills, %{}, fn skill ->
-          {skill.name(), skill}
+          {skill.name(), {:compiled, skill}}
         end)
       end
 
       defp find_matching_skills(subject, skill_index) do
         skill_index
-        |> Enum.filter(fn {pattern, _skill} ->
+        |> Enum.filter(fn {pattern, _entry} ->
           BotArmyCore.NATS.subject_matches?(pattern, subject)
         end)
-        |> Enum.map(fn {_pattern, skill} -> skill end)
+        |> Enum.map(fn {_pattern, entry} -> entry end)
         |> Enum.uniq()
       end
+
+      defp dispatch_skill({:compiled, skill}, payload, ctx, state) do
+        case skill.validate(payload) do
+          :ok ->
+            case skill.execute(payload, ctx) do
+              {:ok, result} ->
+                on_skill_success({:compiled, skill}, result, state)
+
+              {:error, reason} ->
+                on_skill_error({:compiled, skill}, reason, state)
+            end
+
+          {:error, reason} ->
+            Logger.warning("[#{@bot_id}] Skill validation failed",
+              skill: skill.name(),
+              reason: reason
+            )
+        end
+      end
+
+      unquote(
+        if db_skills do
+          quote do
+            defp dispatch_skill({:db, skill_def}, payload, ctx, state) do
+              case BotArmySkills.SkillRunner.execute(skill_def, payload, ctx, repo: state.repo) do
+                {:ok, result} ->
+                  on_skill_success({:db, skill_def}, result, state)
+
+                {:error, reason} ->
+                  on_skill_error({:db, skill_def}, reason, state)
+              end
+            end
+
+            defp merge_db_skills(state) do
+              tenant_id = state.tenant_id || BotArmyRuntime.Tenant.default_tenant_id()
+              repo = state.repo
+
+              try do
+                db_skills_list = BotArmySkills.SkillCache.list_skills(tenant_id, repo: repo)
+
+                db_index =
+                  Enum.flat_map(db_skills_list, fn skill_def ->
+                    triggers = skill_def.triggers || []
+
+                    Enum.map(triggers, fn trigger ->
+                      {trigger, {:db, skill_def}}
+                    end)
+                  end)
+
+                db_names =
+                  Enum.reduce(db_skills_list, %{}, fn skill_def, acc ->
+                    # Index by both atom name and string slug
+                    acc
+                    |> Map.put(skill_def.name, {:db, skill_def})
+                    |> Map.put(skill_def.slug, {:db, skill_def})
+                  end)
+
+                # Remove old DB entries, keep compiled entries
+                compiled_index =
+                  Enum.filter(state.skill_index, fn
+                    {_trigger, {:compiled, _}} -> true
+                    _ -> false
+                  end)
+
+                compiled_names =
+                  Enum.filter(state.name_index, fn
+                    {_name, {:compiled, _}} -> true
+                    _ -> false
+                  end)
+                  |> Enum.into(%{})
+
+                %{
+                  state
+                  | skill_index: compiled_index ++ db_index,
+                    name_index: Map.merge(compiled_names, db_names)
+                }
+              rescue
+                e ->
+                  Logger.warning("[#{@bot_id}] Failed to load DB skills",
+                    error: inspect(e)
+                  )
+
+                  state
+              end
+            end
+          end
+        end
+      )
+
+      defp skill_name_from_entry({:compiled, skill}), do: skill.name()
+      defp skill_name_from_entry({:db, skill_def}), do: skill_def.name
 
       defp build_ctx(state) do
         %{
