@@ -2,6 +2,7 @@
 /_build/
 /cover/
 /deps/
+/.cache/
 /doc/
 
 # OTP
