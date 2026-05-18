@@ -12,6 +12,8 @@ defmodule BotArmyCore.NATS do
 
   require Logger
 
+  alias Publisher
+
   @doc """
   Subscribe to a NATS subject or pattern.
 
@@ -66,7 +68,7 @@ defmodule BotArmyCore.NATS do
       {:ok, "events.gtd.task.created"}
   """
   def publish(subject, payload) when is_binary(subject) and is_map(payload) do
-    BotArmyRuntime.NATS.Publisher.publish(subject, payload)
+    Publisher.publish(subject, payload)
   rescue
     e ->
       Logger.error("[NATS] Failed to publish", subject: subject, error: inspect(e))
@@ -125,9 +127,11 @@ defmodule BotArmyCore.NATS do
   defp match_tokens([], _), do: false
   defp match_tokens([">"], _), do: true
   defp match_tokens([_pattern_token | _], []), do: false
+
   defp match_tokens(["*" | rest_pattern], [_subject_token | rest_subject]) do
     match_tokens(rest_pattern, rest_subject)
   end
+
   defp match_tokens([pattern_token | rest_pattern], [subject_token | rest_subject]) do
     if pattern_token == subject_token do
       match_tokens(rest_pattern, rest_subject)
