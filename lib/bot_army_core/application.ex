@@ -16,7 +16,7 @@ defmodule BotArmyCore.Application do
   end
 
   defp maybe_add_graph_repo do
-    if Application.get_env(:bot_army_core, :graph_enabled, false) &&
+    if Application.get_env(:bot_army_library_core, :graph_enabled, false) &&
          @env != :test do
       # Use restart: :temporary so GraphRepo crash doesn't cycle/restart or crash the supervisor.
       # Graph is background/optional functionality — if it's unavailable, log a warning but keep the bot running.

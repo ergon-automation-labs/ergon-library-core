@@ -72,7 +72,7 @@ defmodule BotArmy.Graph do
       {:ok, result}
     rescue
       e ->
-        Logger.error("[Graph] Query failed", query: cypher, error: inspect(e))
+        Logger.error("[Graph] Query failed: query=#{cypher} error=#{inspect(e)}")
         {:error, :query_failed}
     end
   end
@@ -130,7 +130,7 @@ defmodule BotArmy.Graph do
       {:ok, count}
     rescue
       e ->
-        Logger.error("[Graph] Upsert nodes failed", error: inspect(e))
+        Logger.error("[Graph] Upsert nodes failed: error=#{inspect(e)}")
         {:error, :upsert_failed}
     end
   end
@@ -188,7 +188,7 @@ defmodule BotArmy.Graph do
       {:ok, count}
     rescue
       e ->
-        Logger.error("[Graph] Upsert edges failed", error: inspect(e))
+        Logger.error("[Graph] Upsert edges failed: error=#{inspect(e)}")
         {:error, :upsert_failed}
     end
   end

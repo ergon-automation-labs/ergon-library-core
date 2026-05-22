@@ -6,7 +6,7 @@ import Config
 # GraphDB (Apache AGE) Configuration at runtime — dev fallback only
 # Bots override this in their own runtime.exs with per-bot database names
 # Priority: per-bot runtime.exs (GRAPHDB_NAME=ergon_graphdb_<bot>) > defaults
-config :bot_army_core, BotArmyCore.GraphRepo,
+config :bot_army_library_core, BotArmyCore.GraphRepo,
   hostname: System.get_env("GRAPHDB_HOST", "localhost"),
   port: String.to_integer(System.get_env("GRAPHDB_PORT", "30002")),
   username: System.get_env("GRAPHDB_USER", "postgres"),

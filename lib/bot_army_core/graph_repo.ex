@@ -1,4 +1,5 @@
 defmodule BotArmyCore.GraphRepo do
+  @moduledoc "Ecto repo backed by PostgreSQL with Apache AGE extension for graph queries."
   use Ecto.Repo,
     otp_app: :bot_army_core,
     adapter: Ecto.Adapters.Postgres
@@ -26,7 +27,9 @@ defmodule BotArmyCore.GraphRepo do
           Postgrex.query!(conn, "SET search_path = ag_catalog, \"$user\", public", [])
         rescue
           e ->
-            Logger.warning("[GraphRepo] AGE extension unavailable or error during init: #{inspect(e)}")
+            Logger.warning(
+              "[GraphRepo] AGE extension unavailable or error during init: #{inspect(e)}"
+            )
         end
       end)
 

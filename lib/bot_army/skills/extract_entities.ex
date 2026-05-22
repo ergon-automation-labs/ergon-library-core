@@ -93,13 +93,13 @@ defmodule BotArmy.Skills.ExtractEntities do
              }}
 
           {:error, reason} ->
-            Logger.error("[ExtractEntities] Failed to store in graph", error: inspect(reason))
+            Logger.error("[ExtractEntities] Failed to store in graph: error=#{inspect(reason)}")
             {:error, {:graph_error, reason}}
         end
       end
     rescue
       e ->
-        Logger.error("[ExtractEntities] Execution failed", error: inspect(e))
+        Logger.error("[ExtractEntities] Execution failed: error=#{inspect(e)}")
         {:error, :execution_failed}
     end
   end
@@ -152,7 +152,7 @@ defmodule BotArmy.Skills.ExtractEntities do
       end
     rescue
       e ->
-        Logger.error("[ExtractEntities] Graph upsert failed", error: inspect(e))
+        Logger.error("[ExtractEntities] Graph upsert failed: error=#{inspect(e)}")
         {:error, :graph_upsert_failed}
     end
   end

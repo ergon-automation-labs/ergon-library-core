@@ -374,9 +374,8 @@ defmodule BotArmy.GenBot do
       def on_skill_error(skill_entry, reason, state) do
         skill_name = skill_name_from_entry(skill_entry)
 
-        Logger.error("[#{state.bot_id}] Skill failed",
-          skill: skill_name,
-          reason: inspect(reason)
+        Logger.error(
+          "[#{state.bot_id}] Skill failed: skill=#{skill_name} reason=#{inspect(reason)}"
         )
 
         BotArmyCore.NATS.publish(
@@ -428,9 +427,8 @@ defmodule BotArmy.GenBot do
             end
 
           {:error, reason} ->
-            Logger.warning("[#{@bot_id}] Skill validation failed",
-              skill: skill.name(),
-              reason: reason
+            Logger.warning(
+              "[#{@bot_id}] Skill validation failed: skill=#{skill.name()} reason=#{inspect(reason)}"
             )
         end
       end
@@ -493,9 +491,7 @@ defmodule BotArmy.GenBot do
                 }
               rescue
                 e ->
-                  Logger.warning("[#{@bot_id}] Failed to load DB skills",
-                    error: inspect(e)
-                  )
+                  Logger.warning("[#{@bot_id}] Failed to load DB skills: error=#{inspect(e)}")
 
                   state
               end

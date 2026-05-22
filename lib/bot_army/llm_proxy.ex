@@ -76,7 +76,7 @@ defmodule BotArmy.LLMProxy do
       end
     rescue
       e ->
-        Logger.error("[LLMProxy] Request failed", prompt: prompt, error: inspect(e))
+        Logger.error("[LLMProxy] Request failed: prompt=#{inspect(prompt)} error=#{inspect(e)}")
         {:error, :request_failed}
     end
   end
@@ -127,12 +127,12 @@ defmodule BotArmy.LLMProxy do
           end
         rescue
           e ->
-            Logger.error("[LLMProxy] Failed to parse reply", error: inspect(e))
+            Logger.error("[LLMProxy] Failed to parse reply: error=#{inspect(e)}")
             {:error, :parse_failed}
         end
     after
       timeout ->
-        Logger.warning("[LLMProxy] Request timeout", prompt_id: prompt_id)
+        Logger.warning("[LLMProxy] Request timeout: prompt_id=#{prompt_id}")
         {:error, :timeout}
     end
   end

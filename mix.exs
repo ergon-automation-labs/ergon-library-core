@@ -3,7 +3,7 @@ defmodule BotArmyCore.MixProject do
 
   def project do
     [
-      app: :bot_army_core,
+      app: :bot_army_library_core,
       version: "0.3.5",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
@@ -36,7 +36,7 @@ defmodule BotArmyCore.MixProject do
       {:ex_json_schema, "~> 0.10"},
 
       # Core infrastructure dependencies
-      {:bot_army_runtime, path: "../bot_army_runtime"},
+      {:bot_army_library_runtime, path: "../bot_army_library_runtime"},
       {:ecto_sql, "~> 3.10"},
       {:postgrex, "~> 0.17"},
       {:gnat, "~> 1.2"},
