@@ -42,6 +42,13 @@ defmodule BotArmy.Graph do
 
   @graph_name "knowledge"
 
+  @doc false
+  def graph_repo do
+    # Each bot must configure this in its app module or config
+    # Default to BotArmyCore.GraphRepo for backwards compatibility
+    Application.get_env(:bot_army_library_core, :graph_repo, BotArmyCore.GraphRepo)
+  end
+
   @doc """
   Execute a raw Cypher query.
 
@@ -68,7 +75,7 @@ defmodule BotArmy.Graph do
       sql =
         "SELECT * FROM cypher('#{@graph_name}', $$ #{sanitized} $$) AS (result agtype)"
 
-      result = BotArmyCore.GraphRepo.query!(sql, [])
+      result = graph_repo().query!(sql, [])
       {:ok, result}
     rescue
       e ->

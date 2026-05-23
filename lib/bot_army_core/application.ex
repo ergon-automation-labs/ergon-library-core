@@ -5,8 +5,6 @@ defmodule BotArmyCore.Application do
 
   use Application
 
-  @env Mix.env()
-
   @impl true
   def start(_type, _args) do
     children = maybe_add_graph_repo()
@@ -16,13 +14,9 @@ defmodule BotArmyCore.Application do
   end
 
   defp maybe_add_graph_repo do
-    if Application.get_env(:bot_army_library_core, :graph_enabled, false) &&
-         @env != :test do
-      # Use restart: :temporary so GraphRepo crash doesn't cycle/restart or crash the supervisor.
-      # Graph is background/optional functionality — if it's unavailable, log a warning but keep the bot running.
-      [Supervisor.child_spec(BotArmyCore.GraphRepo, restart: :temporary)]
-    else
-      []
-    end
+    # GraphRepo is now supervised by individual bots, not the library.
+    # Each bot defines its own repo (e.g., BotArmyInternalDocs.GraphRepo)
+    # to avoid configuration conflicts when multiple bots load the library.
+    []
   end
 end
