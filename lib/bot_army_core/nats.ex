@@ -12,7 +12,7 @@ defmodule BotArmyCore.NATS do
 
   require Logger
 
-  alias Publisher
+  alias BotArmyRuntime.NATS.Publisher
 
   @doc """
   Subscribe to a NATS subject or pattern.
