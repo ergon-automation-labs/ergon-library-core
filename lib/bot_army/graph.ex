@@ -11,7 +11,7 @@ defmodule BotArmy.Graph do
 
   1. Enable graph support in your bot config:
 
-      config :bot_army_core, :graph_enabled, true
+      config :bot_army_library_core, :graph_enabled, true
 
   2. One-time setup in the graph database:
 
