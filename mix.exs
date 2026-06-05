@@ -36,7 +36,8 @@ defmodule BotArmyCore.MixProject do
       {:ex_json_schema, "~> 0.10"},
 
       # Core infrastructure dependencies
-      {:bot_army_library_runtime, path: "../bot_army_library_runtime"},
+      {:bot_army_library_runtime,
+       git: "git@github.com:ergon-automation-labs/ergon-library-runtime.git", branch: "main"},
       {:ecto_sql, "~> 3.10"},
       {:postgrex, "~> 0.17"},
       {:gnat, "~> 1.2"},
