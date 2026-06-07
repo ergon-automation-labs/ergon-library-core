@@ -65,8 +65,16 @@ defmodule BotArmyCore.NATS.Decoder do
   end
 
   # Required fields from the envelope schema (as strings, since JSON keys are strings)
-  @required_envelope_fields ~w(event_id event schema_version timestamp source source_node triggered_by payload)a
-                            |> Enum.map(&Atom.to_string/1)
+  @required_envelope_fields [
+    "event_id",
+    "event",
+    "schema_version",
+    "timestamp",
+    "source",
+    "source_node",
+    "triggered_by",
+    "payload"
+  ]
 
   defp validate_required_fields(envelope) do
     missing_fields = Enum.filter(@required_envelope_fields, &is_nil(envelope[&1]))
