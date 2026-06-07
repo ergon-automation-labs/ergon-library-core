@@ -79,6 +79,16 @@ defmodule BotArmyCore.NATS.Decoder do
   defp validate_required_fields(envelope) do
     missing_fields = Enum.filter(@required_envelope_fields, &is_nil(envelope[&1]))
 
+    if envelope["event"] == "system.health" && not Enum.empty?(missing_fields) do
+      Logger.info(
+        "[Decoder] system.health envelope keys: #{envelope |> Map.keys() |> Enum.join(",")}"
+      )
+
+      Logger.info(
+        "[Decoder] Missing: #{inspect(missing_fields)}, source_node=#{inspect(envelope["source_node"])}, triggered_by=#{inspect(envelope["triggered_by"])}"
+      )
+    end
+
     case missing_fields do
       [] -> :ok
       fields -> {:error, {:missing_required_fields, fields}}
