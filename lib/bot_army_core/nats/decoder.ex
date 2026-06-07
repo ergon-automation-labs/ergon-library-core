@@ -48,7 +48,10 @@ defmodule BotArmyCore.NATS.Decoder do
     with :ok <- validate_required_fields(envelope),
          :ok <- validate_field_types(envelope),
          {:ok, payload} <- extract_and_validate_payload(envelope) do
-      Logger.debug("Envelope validation passed: event=#{envelope["event"]}, version=#{envelope["schema_version"]}")
+      Logger.debug(
+        "Envelope validation passed: event=#{envelope["event"]}, version=#{envelope["schema_version"]}"
+      )
+
       {:ok, %{envelope | "payload" => payload}}
     else
       {:error, reason} ->
@@ -61,8 +64,9 @@ defmodule BotArmyCore.NATS.Decoder do
     {:error, :envelope_not_map}
   end
 
-  # Required fields from the envelope schema
-  @required_envelope_fields ~w(event_id event schema_version timestamp source source_node triggered_by payload)
+  # Required fields from the envelope schema (as strings, since JSON keys are strings)
+  @required_envelope_fields ~w(event_id event schema_version timestamp source source_node triggered_by payload)a
+                            |> Enum.map(&Atom.to_string/1)
 
   defp validate_required_fields(envelope) do
     missing_fields = Enum.filter(@required_envelope_fields, &is_nil(envelope[&1]))
@@ -94,14 +98,14 @@ defmodule BotArmyCore.NATS.Decoder do
 
     # Validate required fields
     case Enum.reduce_while(required_validations, :ok, fn {field, expected_type}, _acc ->
-      value = envelope[field]
+           value = envelope[field]
 
-      if valid_type?(value, expected_type) do
-        {:cont, :ok}
-      else
-        {:halt, {:error, {:invalid_field_type, field, expected_type}}}
-      end
-    end) do
+           if valid_type?(value, expected_type) do
+             {:cont, :ok}
+           else
+             {:halt, {:error, {:invalid_field_type, field, expected_type}}}
+           end
+         end) do
       :ok ->
         # Validate optional fields if present
         Enum.reduce_while(optional_validations, :ok, fn {field, expected_type}, _acc ->
