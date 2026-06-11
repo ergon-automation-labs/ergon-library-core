@@ -145,14 +145,22 @@ defmodule BotArmyCore.OutcomesEmitter do
   defp emit_event(subject, payload) do
     case encode_event(payload) do
       {:ok, json} ->
-        case Gnat.pub(:nats_connection, subject, json) do
-          :ok ->
-            Logger.debug("Emitted outcomes event", subject: subject)
+        try do
+          case Gnat.pub(:nats_connection, subject, json) do
+            :ok ->
+              Logger.debug("Emitted outcomes event", subject: subject)
 
-          {:error, reason} ->
-            Logger.warning("Failed to emit outcomes event",
+            {:error, reason} ->
+              Logger.warning("Failed to emit outcomes event",
+                subject: subject,
+                reason: reason
+              )
+          end
+        catch
+          :exit, reason ->
+            Logger.warning("NATS unavailable, outcomes event dropped",
               subject: subject,
-              reason: reason
+              reason: inspect(reason)
             )
         end
 
