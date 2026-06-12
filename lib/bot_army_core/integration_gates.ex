@@ -188,4 +188,15 @@ defmodule BotArmyCore.IntegrationGates do
       Gnat.request(conn, subject, payload, opts)
     end
   end
+
+  def gnat_pub(conn, integration, subject, payload) do
+    enabled_fn = String.to_atom("#{integration}_enabled?")
+
+    unless apply(__MODULE__, enabled_fn, []) do
+      Logger.debug("[IntegrationGates] #{integration} disabled, skipping pub to #{subject}")
+      :ok
+    else
+      Gnat.pub(conn, subject, payload)
+    end
+  end
 end
