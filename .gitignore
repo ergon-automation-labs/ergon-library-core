@@ -1,35 +1,21 @@
-# Compiled Elixir
 /_build/
 /cover/
 /deps/
 /.cache/
 /doc/
-
-# OTP
 erl_crash.dump
-
-# Environment variables
+mix.lock
 .env
 .env.local
 .env.*.local
-
-# IDEs
 .idea/
 .vscode/
 *.sublime-workspace
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
-Thumbs.db
-
-# Testing
 .excoveralls.json
-coverage.json
-
-# Other
 .elixir_ls/
 *.beam
 
@@ -37,3 +23,4 @@ coverage.json
 *.crash
 *.tar.gz
 *.tar.xz
+_build_cursor_test/
