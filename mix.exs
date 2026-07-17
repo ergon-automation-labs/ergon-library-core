@@ -1,4 +1,4 @@
-defmodule BotArmyCore.MixProject do
+defmodule BotArmyLibraryCore.MixProject do
   use Mix.Project
 
   def project do
