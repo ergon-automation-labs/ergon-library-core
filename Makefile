@@ -1,6 +1,6 @@
 SCRIPTS_DIRECTORY ?= $(abspath $(CURDIR)/../scripts)
 
-.PHONY: test-handlers test-stores test-nats test-integration test-full setup help deps test credo dialyzer coverage check format clean setup-hooks logs git-push push-and-publish bump-version
+.PHONY: test-handlers test-stores test-nats test-integration test-full setup help deps test credo dialyzer coverage check format clean setup-hooks logs git-push push-and-publish bump-version compile
 
 ## Show this help message
 help:
@@ -38,10 +38,22 @@ init:
 	fi
 
 ## Install dependencies
+compile:
+	@LOG_FILE="/tmp/compile-core-$$(date +%s).log"; \
+	echo "Compiling core and logging to $$LOG_FILE..."; \
+	$(MIX) compile 2>&1 | tee "$$LOG_FILE"; \
+	echo "✓ Compilation log: $$LOG_FILE"
+
 deps:
 	mix deps.get
 
 ## Run all tests
+compile:
+	@LOG_FILE="/tmp/compile-core-$$(date +%s).log"; \
+	echo "Compiling core and logging to $$LOG_FILE..."; \
+	$(MIX) compile 2>&1 | tee "$$LOG_FILE"; \
+	echo "✓ Compilation log: $$LOG_FILE"
+
 test:
 	mix test
 
