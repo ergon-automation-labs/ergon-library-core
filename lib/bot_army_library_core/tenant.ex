@@ -1,4 +1,4 @@
-defmodule BotArmyCore.Tenant do
+defmodule BotArmyLibraryCore.Tenant do
   @moduledoc """
   Tenant identity for the multi-tenant Bot Army system.
 
@@ -16,7 +16,7 @@ defmodule BotArmyCore.Tenant do
       tenant.<tenant_id>.gtd.*
       etc.
 
-  For more advanced tenant utilities, see `BotArmyRuntime.Tenant`.
+  For more advanced tenant utilities, see `BotArmyLibraryRuntime.Tenant`.
 
   ## Deprecation Notes
 

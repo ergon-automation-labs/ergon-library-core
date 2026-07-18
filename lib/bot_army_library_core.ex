@@ -1,9 +1,9 @@
-defmodule BotArmyCore do
+defmodule BotArmyLibraryCore do
   @moduledoc """
   BotArmyCore is the shared message contract foundation and core library for the Bot Army ecosystem.
 
   It provides:
-  - NATS message envelope handling (`BotArmyCore.NATS.Decoder`)
+  - NATS message envelope handling (`BotArmyLibraryCore.NATS.Decoder`)
   - Standard error and acknowledgment response shapes
   - System health and alert definitions
   - Triggered_by audit value registry

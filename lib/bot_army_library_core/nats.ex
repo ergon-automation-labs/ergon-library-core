@@ -1,4 +1,4 @@
-defmodule BotArmyCore.NATS do
+defmodule BotArmyLibraryCore.NATS do
   @moduledoc """
   NATS wrapper for BotArmy.
 
@@ -7,17 +7,17 @@ defmodule BotArmyCore.NATS do
   - Subscribing to NATS subjects
   - Pattern matching NATS subject wildcards
 
-  Wraps the lower-level BotArmyRuntime.NATS.* infrastructure.
+  Wraps the lower-level BotArmyLibraryRuntime.NATS.* infrastructure.
   """
 
   require Logger
 
-  alias BotArmyRuntime.NATS.Publisher
+  alias BotArmyLibraryRuntime.NATS.Publisher
 
   @doc """
   Subscribe to a NATS subject or pattern.
 
-  This uses the shared NATS connection from BotArmyRuntime.NATS.Connection
+  This uses the shared NATS connection from BotArmyLibraryRuntime.NATS.Connection
   and subscribes the current process to the given subject.
 
   ## Arguments
@@ -31,10 +31,10 @@ defmodule BotArmyCore.NATS do
 
   ## Examples
 
-      iex> BotArmyCore.NATS.subscribe("bot.army.generalist.command.>")
+      iex> BotArmyLibraryCore.NATS.subscribe("bot.army.generalist.command.>")
       {:ok, 123}
 
-      iex> BotArmyCore.NATS.subscribe("events.llm.response.*")
+      iex> BotArmyLibraryCore.NATS.subscribe("events.llm.response.*")
       {:ok, 456}
   """
   def subscribe(subject) when is_binary(subject) do
@@ -64,7 +64,7 @@ defmodule BotArmyCore.NATS do
 
   ## Examples
 
-      iex> BotArmyCore.NATS.publish("events.gtd.task.created", %{"task_id" => "123"})
+      iex> BotArmyLibraryCore.NATS.publish("events.gtd.task.created", %{"task_id" => "123"})
       {:ok, "events.gtd.task.created"}
   """
   def publish(subject, payload) when is_binary(subject) and is_map(payload) do
@@ -94,16 +94,16 @@ defmodule BotArmyCore.NATS do
 
   ## Examples
 
-      iex> BotArmyCore.NATS.subject_matches?("a.b.c", "a.b.c")
+      iex> BotArmyLibraryCore.NATS.subject_matches?("a.b.c", "a.b.c")
       true
 
-      iex> BotArmyCore.NATS.subject_matches?("a.*.c", "a.b.c")
+      iex> BotArmyLibraryCore.NATS.subject_matches?("a.*.c", "a.b.c")
       true
 
-      iex> BotArmyCore.NATS.subject_matches?("a.>", "a.b.c.d")
+      iex> BotArmyLibraryCore.NATS.subject_matches?("a.>", "a.b.c.d")
       true
 
-      iex> BotArmyCore.NATS.subject_matches?("a.b", "a.c")
+      iex> BotArmyLibraryCore.NATS.subject_matches?("a.b", "a.c")
       false
   """
   def subject_matches?(pattern, subject) when is_binary(pattern) and is_binary(subject) do
@@ -116,7 +116,7 @@ defmodule BotArmyCore.NATS do
   # Private helpers
 
   defp get_connection do
-    GenServer.call(BotArmyRuntime.NATS.Connection, :get_connection, 1000)
+    GenServer.call(BotArmyLibraryRuntime.NATS.Connection, :get_connection, 1000)
   rescue
     _ -> {:error, :no_connection}
   end

@@ -1,4 +1,4 @@
-defmodule BotArmyCore.IntegrationGates do
+defmodule BotArmyLibraryCore.IntegrationGates do
   @moduledoc """
   Central integration gating for all optional bot integrations.
 
@@ -26,7 +26,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] LLM disabled, skipping #{subject}")
       {:error, :llm_integration_disabled}
     else
-      BotArmyRuntime.NATS.Publisher.request(subject, payload, opts)
+      BotArmyLibraryRuntime.NATS.Publisher.request(subject, payload, opts)
     end
   end
 
@@ -35,7 +35,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] LLM disabled, skipping publish to #{subject}")
       :ok
     else
-      BotArmyRuntime.NATS.Publisher.publish(subject, payload)
+      BotArmyLibraryRuntime.NATS.Publisher.publish(subject, payload)
     end
   end
 
@@ -49,7 +49,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] Bridge disabled, skipping #{subject}")
       {:error, :bridge_integration_disabled}
     else
-      BotArmyRuntime.NATS.Publisher.request(subject, payload, opts)
+      BotArmyLibraryRuntime.NATS.Publisher.request(subject, payload, opts)
     end
   end
 
@@ -58,7 +58,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] Bridge disabled, skipping publish to #{subject}")
       :ok
     else
-      BotArmyRuntime.NATS.Publisher.publish(subject, payload)
+      BotArmyLibraryRuntime.NATS.Publisher.publish(subject, payload)
     end
   end
 
@@ -72,7 +72,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] PARA disabled, skipping #{subject}")
       {:error, :para_integration_disabled}
     else
-      BotArmyRuntime.NATS.Publisher.request(subject, payload, opts)
+      BotArmyLibraryRuntime.NATS.Publisher.request(subject, payload, opts)
     end
   end
 
@@ -81,7 +81,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] PARA disabled, skipping publish to #{subject}")
       :ok
     else
-      BotArmyRuntime.NATS.Publisher.publish(subject, payload)
+      BotArmyLibraryRuntime.NATS.Publisher.publish(subject, payload)
     end
   end
 
@@ -95,7 +95,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] Context disabled, skipping #{subject}")
       {:error, :context_integration_disabled}
     else
-      BotArmyRuntime.NATS.Publisher.request(subject, payload, opts)
+      BotArmyLibraryRuntime.NATS.Publisher.request(subject, payload, opts)
     end
   end
 
@@ -104,7 +104,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] Context disabled, skipping publish to #{subject}")
       :ok
     else
-      BotArmyRuntime.NATS.Publisher.publish(subject, payload)
+      BotArmyLibraryRuntime.NATS.Publisher.publish(subject, payload)
     end
   end
 
@@ -118,7 +118,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] Notifications disabled, skipping #{subject}")
       {:error, :notification_integration_disabled}
     else
-      BotArmyRuntime.NATS.Publisher.request(subject, payload, opts)
+      BotArmyLibraryRuntime.NATS.Publisher.request(subject, payload, opts)
     end
   end
 
@@ -127,7 +127,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] Notifications disabled, skipping publish to #{subject}")
       :ok
     else
-      BotArmyRuntime.NATS.Publisher.publish(subject, payload)
+      BotArmyLibraryRuntime.NATS.Publisher.publish(subject, payload)
     end
   end
 
@@ -141,7 +141,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] Synapse disabled, skipping #{subject}")
       {:error, :synapse_integration_disabled}
     else
-      BotArmyRuntime.NATS.Publisher.request(subject, payload, opts)
+      BotArmyLibraryRuntime.NATS.Publisher.request(subject, payload, opts)
     end
   end
 
@@ -150,7 +150,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] Synapse disabled, skipping publish to #{subject}")
       :ok
     else
-      BotArmyRuntime.NATS.Publisher.publish(subject, payload)
+      BotArmyLibraryRuntime.NATS.Publisher.publish(subject, payload)
     end
   end
 
@@ -164,7 +164,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] Dispatcher disabled, skipping #{subject}")
       {:error, :dispatcher_integration_disabled}
     else
-      BotArmyRuntime.NATS.Publisher.request(subject, payload, opts)
+      BotArmyLibraryRuntime.NATS.Publisher.request(subject, payload, opts)
     end
   end
 
@@ -173,7 +173,7 @@ defmodule BotArmyCore.IntegrationGates do
       Logger.debug("[IntegrationGates] Dispatcher disabled, skipping publish to #{subject}")
       :ok
     else
-      BotArmyRuntime.NATS.Publisher.publish(subject, payload)
+      BotArmyLibraryRuntime.NATS.Publisher.publish(subject, payload)
     end
   end
 

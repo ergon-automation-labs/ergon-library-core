@@ -1,4 +1,4 @@
-defmodule BotArmyCore.GraphRepo do
+defmodule BotArmyLibraryCore.GraphRepo do
   @moduledoc "Ecto repo backed by PostgreSQL with Apache AGE extension for graph queries."
   use Ecto.Repo,
     otp_app: :bot_army_library_core,

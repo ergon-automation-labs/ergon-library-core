@@ -1,6 +1,6 @@
 SCRIPTS_DIRECTORY ?= $(abspath $(CURDIR)/../scripts)
 
-.PHONY: test-handlers test-stores test-nats test-integration test-full setup help deps test credo dialyzer coverage check format clean setup-hooks logs push-and-publish
+.PHONY: test-handlers test-stores test-nats test-integration test-full setup help deps test credo dialyzer coverage check format clean setup-hooks logs git-push push-and-publish bump-version
 
 ## Show this help message
 help:
@@ -85,8 +85,21 @@ clean:
 	mix clean
 	rm -rf _build cover doc
 
-push-and-publish:
-	@git push && $(MAKE) publish-release
+git-push:
+	@LOG_FILE="/tmp/git-push-bot_army_library_core-$$(date +%s).log"; \
+	echo "Pushing to origin/main and logging to $$LOG_FILE..."; \
+	git push 2>&1 | tee "$$LOG_FILE"; \
+	echo "✓ Log saved: $$LOG_FILE"
+
+push-and-publish: git-push
+	@$(MAKE) publish-release
 
 logs:
 	@$(SCRIPTS_DIRECTORY)/tail_bot_log.sh
+
+bump-version:
+	@if [ -z "$(BUMP)" ]; then echo "Usage: make bump-version BUMP=major|minor|patch"; exit 1; fi
+	@OLD=$$(grep 'version:' mix.exs | head -1 | sed -E 's/.*version: "([^"]+)".*/\1/'); \
+	bash $(SCRIPTS_DIRECTORY)/bump_version.sh mix.exs $(BUMP) > /dev/null; \
+	NEW=$$(grep 'version:' mix.exs | head -1 | sed -E 's/.*version: "([^"]+)".*/\1/'); \
+	echo "✓ Bumped: $$OLD → $$NEW"

@@ -1,4 +1,4 @@
-defmodule BotArmyCore.NATS.Decoder do
+defmodule BotArmyLibraryCore.NATS.Decoder do
   @moduledoc """
   Decodes NATS messages using the schema definitions deployed at `/etc/bot_army/schemas/core/`.
 
@@ -77,7 +77,14 @@ defmodule BotArmyCore.NATS.Decoder do
   ]
 
   defp validate_required_fields(envelope) do
-    missing_fields = Enum.filter(@required_envelope_fields, &is_nil(envelope[&1]))
+    is_v2 = envelope["protocol"] == "ba.v2"
+
+    required =
+      if is_v2,
+        do: @required_envelope_fields ++ ["correlation_id"],
+        else: @required_envelope_fields
+
+    missing_fields = Enum.filter(required, &is_nil(envelope[&1]))
 
     if envelope["event"] == "system.health" && not Enum.empty?(missing_fields) do
       Logger.info(
@@ -106,6 +113,12 @@ defmodule BotArmyCore.NATS.Decoder do
       {"source_node", "string"},
       {"payload", "object"}
     ]
+
+    # If v2, we must also validate correlation_id
+    required_validations =
+      if envelope["protocol"] == "ba.v2",
+        do: required_validations ++ [{"correlation_id", "string"}],
+        else: required_validations
 
     # Optional fields - if present, must have correct type
     optional_validations = [
