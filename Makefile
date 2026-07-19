@@ -97,6 +97,13 @@ clean:
 	mix clean
 	rm -rf _build cover doc
 
+push: test compile credo pre-push-cleanup
+	@echo "✅ All validations passed"
+	@echo "$$(date +%s)" > .push-validated
+	@echo "✓ Proof-of-validation created"
+	@$(MAKE) git-push
+
+
 git-push:
 	@LOG_FILE="/tmp/git-push-bot_army_library_core-$$(date +%s).log"; \
 	echo "Pushing to origin/main and logging to $$LOG_FILE..."; \
