@@ -1,4 +1,4 @@
-defmodule BotArmyCore.Factory.Event do
+defmodule BotArmyLibraryCore.Factory.Event do
   @moduledoc """
   Canonical factory event envelope (see `schemas/factory/factory_event.schema.json`).
 

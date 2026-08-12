@@ -15,6 +15,13 @@ defmodule BotArmyLibraryCore.Tenant do
       tenant.<tenant_id>.events.*
       tenant.<tenant_id>.gtd.*
       etc.
+
+  For more advanced tenant utilities, see `BotArmyLibraryRuntime.Tenant`.
+
+  ## Deprecation Notes
+
+  The `default_tenant_id/0` function returns a UUID. This is the standard tenant
+  identifier for single-tenant deployments. SaaS tenants get their own UUIDs.
   """
 
   @default_tenant_id "00000000-0000-0000-0000-000000000001"

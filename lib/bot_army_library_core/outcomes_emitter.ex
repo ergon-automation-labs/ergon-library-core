@@ -1,4 +1,4 @@
-defmodule BotArmyCore.OutcomesEmitter do
+defmodule BotArmyLibraryCore.OutcomesEmitter do
   @moduledoc """
   Helper module for emitting outcomes.* events to NATS.
 
@@ -11,7 +11,7 @@ defmodule BotArmyCore.OutcomesEmitter do
   - System health signals
 
   Usage:
-      BotArmyCore.OutcomesEmitter.emit_task_completed(
+      BotArmyLibraryCore.OutcomesEmitter.emit_task_completed(
         task_id,
         %{
           "metric_name" => "completion_rate",

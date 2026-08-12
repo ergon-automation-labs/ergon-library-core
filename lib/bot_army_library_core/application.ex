@@ -1,4 +1,4 @@
-defmodule BotArmyCore.Application do
+defmodule BotArmyLibraryCore.Application do
   @moduledoc """
   BotArmyCore application supervisor.
   """
@@ -9,7 +9,7 @@ defmodule BotArmyCore.Application do
   def start(_type, _args) do
     children = maybe_add_graph_repo()
 
-    opts = [strategy: :one_for_one, name: BotArmyCore.Supervisor]
+    opts = [strategy: :one_for_one, name: BotArmyLibraryCore.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
