@@ -12,5 +12,4 @@ config :bot_army_library_core, BotArmyCore.GraphRepo,
   username: System.get_env("GRAPHDB_USER", "postgres"),
   password: System.get_env("GRAPHDB_PASSWORD", "postgres"),
   database: System.get_env("GRAPHDB_NAME", "ergon_graphs"),
-  pool_size: System.get_env("BOT_POOL_SIZE", "15") |> String.to_integer(),
-
+  pool_size: System.get_env("BOT_POOL_SIZE", "15") |> String.to_integer()
