@@ -1,8 +1,8 @@
-defmodule BotArmyCore.NATS.DecoderTest do
+defmodule BotArmyLibraryCore.NATS.DecoderTest do
   use ExUnit.Case
   @moduletag :nats
 
-  alias BotArmyCore.NATS.Decoder
+  alias BotArmyLibraryCore.NATS.Decoder
 
   describe "decode/1 - JSON parsing" do
     test "returns error on invalid JSON" do

@@ -1,8 +1,8 @@
-defmodule BotArmyCore.Factory.EventTest do
+defmodule BotArmyLibraryCore.Factory.EventTest do
   use ExUnit.Case
   @moduletag :schemas
 
-  alias BotArmyCore.Factory.Event
+  alias BotArmyLibraryCore.Factory.Event
 
   test "build and decode round-trip" do
     {:ok, env} =
