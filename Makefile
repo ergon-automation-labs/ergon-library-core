@@ -38,21 +38,13 @@ init:
 	fi
 
 ## Install dependencies
-_compile-impl:
-	@LOG_FILE="/tmp/compile-core-$$(date +%s).log"; \
-	echo "Compiling core and logging to $$LOG_FILE..."; \
-	$(MIX) compile 2>&1 | tee "$$LOG_FILE"; \
-	echo "✓ Compilation log: $$LOG_FILE"
-
 deps:
 	mix deps.get
 
-## Run all tests
 _compile-impl:
-	@LOG_FILE="/tmp/compile-core-$$(date +%s).log"; \
-	echo "Compiling core and logging to $$LOG_FILE..."; \
-	$(MIX) compile 2>&1 | tee "$$LOG_FILE"; \
-	echo "✓ Compilation log: $$LOG_FILE"
+	$(MIX) compile
+
+## Run all tests
 
 test:
 	mix test
