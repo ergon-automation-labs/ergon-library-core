@@ -128,35 +128,45 @@ defmodule BotArmyLibraryCore.NATS.Decoder do
     ]
 
     # Validate required fields
-    case Enum.reduce_while(required_validations, :ok, fn {field, expected_type}, _acc ->
-           value = envelope[field]
-
-           if valid_type?(value, expected_type) do
-             {:cont, :ok}
-           else
-             {:halt, {:error, {:invalid_field_type, field, expected_type}}}
-           end
-         end) do
+    case validate_required_fields(envelope, required_validations) do
       :ok ->
         # Validate optional fields if present
-        Enum.reduce_while(optional_validations, :ok, fn {field, expected_type}, _acc ->
-          case envelope[field] do
-            nil ->
-              # Field not present - that's fine, it's optional
-              {:cont, :ok}
-
-            value ->
-              # Field present - validate type
-              if valid_type?(value, expected_type) do
-                {:cont, :ok}
-              else
-                {:halt, {:error, {:invalid_field_type, field, expected_type}}}
-              end
-          end
-        end)
+        validate_optional_fields(envelope, optional_validations)
 
       error ->
         error
+    end
+  end
+
+  defp validate_required_fields(envelope, validations) do
+    Enum.reduce_while(validations, :ok, fn {field, expected_type}, _acc ->
+      if valid_type?(envelope[field], expected_type) do
+        {:cont, :ok}
+      else
+        {:halt, {:error, {:invalid_field_type, field, expected_type}}}
+      end
+    end)
+  end
+
+  defp validate_optional_fields(envelope, validations) do
+    Enum.reduce_while(validations, :ok, fn {field, expected_type}, _acc ->
+      validate_optional_field(envelope, field, expected_type)
+    end)
+  end
+
+  defp validate_optional_field(envelope, field, expected_type) do
+    case envelope[field] do
+      # Field not present - that's fine, it's optional
+      nil ->
+        {:cont, :ok}
+
+      value ->
+        # Field present - validate type
+        if valid_type?(value, expected_type) do
+          {:cont, :ok}
+        else
+          {:halt, {:error, {:invalid_field_type, field, expected_type}}}
+        end
     end
   end
 
@@ -173,22 +183,26 @@ defmodule BotArmyLibraryCore.NATS.Decoder do
     # Extract schema name from event (e.g., "gtd.task.create" -> "gtd" for gtd schemas)
     case get_schema_name(event, version) do
       {:ok, schema_name} ->
-        case load_schema(schema_name) do
-          {:ok, schema} ->
-            if schema_supported?(schema, version) do
-              {:ok, payload}
-            else
-              {:error, {:unsupported_schema_version, schema_name, version}}
-            end
-
-          {:error, reason} ->
-            Logger.debug("Could not load schema for event #{event}: #{inspect(reason)}")
-            # Allow graceful degradation - payload is valid if schema not found
-            {:ok, payload}
-        end
+        validate_schema_version(schema_name, version, payload, event)
 
       :error ->
         # Unknown event type, but allow it through with validation
+        {:ok, payload}
+    end
+  end
+
+  defp validate_schema_version(schema_name, version, payload, event) do
+    case load_schema(schema_name) do
+      {:ok, schema} ->
+        if schema_supported?(schema, version) do
+          {:ok, payload}
+        else
+          {:error, {:unsupported_schema_version, schema_name, version}}
+        end
+
+      {:error, reason} ->
+        Logger.debug("Could not load schema for event #{event}: #{inspect(reason)}")
+        # Allow graceful degradation - payload is valid if schema not found
         {:ok, payload}
     end
   end
