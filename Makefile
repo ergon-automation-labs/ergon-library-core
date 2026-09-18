@@ -24,9 +24,6 @@ setup: init deps setup-hooks
 	@echo "Setup complete. Run 'make check' to verify everything works."
 
 ## Install git hooks
-setup-hooks:
-	@git config core.hooksPath git-hooks
-	@echo "✓ Git hooks installed (core.hooksPath = git-hooks)"
 
 ## Initialize git repository (idempotent)
 init:
